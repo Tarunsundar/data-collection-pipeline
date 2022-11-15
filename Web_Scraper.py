@@ -3,19 +3,16 @@ This is a python program written to
 scrap neccessary data from a financial website
 i.e. coinmarketcap.com.
 '''
-
+import time
 import datetime
 import os
 import json
 import random
-import shutil
-from unicodedata import name
-from venv import create
 import requests
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-import time
+from selenium.webdriver.chrome.options import Options
 from time import sleep
 
 class web_Scraper:
@@ -37,38 +34,43 @@ class web_Scraper:
 
         '''
         self.count = 0 # variable for number of Cryptocurrencies data acquired
-        self.driver = webdriver.Chrome()
+        self.chrome_options = webdriver.ChromeOptions()
+        self.chrome_options.add_argument("--start-maximized")
+        self.chrome_options.add_argument('--headless')
+        self.chrome_options.add_argument('--disable-gpu')
+        self.chrome_options.add_argument('--disable-dev-shm-usage')
+        self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36')
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+        URL = "https://www.coinmarketcap.com"
+        self.driver.get(URL)
+        time.sleep(1) 
         self.list_of_coin_links = []
-        self.big_list = []
+        self.coin_name = ""
+        self.coin_price = ""
+        self.coin_rank = ""
+        self.coin_image_link = ""
         self.coin_dict = {}
 
-    def load_and_close_unwanted(self) -> webdriver.Chrome:
+    def close_unwanted(self) -> webdriver.Chrome:
         '''
-        Loads coinmarketcap webpage and accepts the cookies
+        this method accepts the cookies
 
         Returns
         -------
         driver: webdriver.Chrome
-            This driver is already in the coinmarketcap webpage
+            This driver loads the coinmarketcap webpage 
         ''' 
-        URL = "https://www.coinmarketcap.com"
-        self.driver.get(URL)
-        time.sleep(1) 
-        #self.driver.maximize_window()
+        #time.sleep(30)
+        self.driver.maximize_window()
         try:
             accept_cookies_button = self.driver.find_element(by=By.XPATH, value='//div[@class="cmc-cookie-policy-banner__close"]')
             accept_cookies_button.click()
             time.sleep(1)
-
-        except AttributeError: # If you have the latest version of Selenium, the code above won't run because the "switch_to_frame" is deprecated
-            accept_cookies_button = self.driver.find_element(by=By.XPATH, value='//div[@class="cmc-cookie-policy-banner__close"]')
-            accept_cookies_button.click()
-            time.sleep(1)
-
+            return True
         except:
             print("Couldn't find button")
-            pass #if accept cookies button  found
-        return self.driver 
+            return False #if accept cookies button  found
 
     def _click_next_page(self):
         '''
@@ -81,11 +83,11 @@ class web_Scraper:
         type 
         ----
 
-        Object - an object instance of the web_scraper class
+        Object - an object instance of the web_scraper class151
 
         '''
         #self.driver.execute_script("window.scrollBy(0,5500)","")
-        find_class = self.driver.find_element(by=By.XPATH, value='//div[@class="sc-1t7mu4i-0 kbMknJ"]')
+        find_class = self.driver.find_element(by=By.XPATH, value='//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[7]/div[1]/div')
         find_next = find_class.find_element(by=By.XPATH, value='//li[@class="next"]')
         a_tag = find_next.find_element(by=By.TAG_NAME, value='a')
         list_of_coin_links = a_tag.get_attribute('href')
@@ -132,16 +134,16 @@ class web_Scraper:
         list_of_coin_links:>coin_index list
             A list with all the list_of_coin_linkss in the page
         '''
-        crypto_table = self.driver.find_element(by=By.XPATH, value='//table[@class="h7vnx2-2 cgeQEz cmc-table  "]')
-        crypto_list = crypto_table.find_elements(by=By.XPATH, value='.//div[@class="sc-1prm8qw-0 PzkeQ"]')
+        crypto_table = self.driver.find_element(by=By.XPATH, value='/html/body/div[1]/div/div[1]/div[2]/div/div[1]/div[5]/table')
+        crypto_list = crypto_table.find_elements(by=By.XPATH, value='//tbody/tr/td[3]/div')
         time.sleep(0.1)
-        
+
         for crypto_currency in crypto_list:
             a_tag = crypto_currency.find_element(by=By.TAG_NAME, value='a')       
             list_of_coin_links = a_tag.get_attribute('href')
             self.list_of_coin_links.append(list_of_coin_links)
 
-        print(" number of coin pages acquired: 2", len(self.list_of_coin_links))    
+        print(" number of coin pages acquired: ", len(self.list_of_coin_links))    
         #print(f'There are {len(self.list_of_coin_links)>coin_index} crypto currencies in this page')
         #print(self.list_of_coin_links)>coin_index
         return self.list_of_coin_links
@@ -162,11 +164,12 @@ class web_Scraper:
             handler.write(img_data)
         
     def _get_coin_index(self):
-        coin_index = int(input("which coin from the first 2 pages, you would like(enter rank)\n")) 
-        if(len(self.list_of_coin_links)<coin_index):            
-             coin_index = random.randrange(0, 199) 
-             print('invalid input, coin index not found in the first 2 pages, using random coin index: ', coin_index) 
-        return coin_index
+       #coin_index = int(input("which coin from the first 2 pages, you would like(enter rank)\n"))
+       #coin_index = coin_index - 1 
+       #if(len(self.list_of_coin_links)<coin_index):            
+       coin_index = random.randrange(0, len(self.list_of_coin_links)) 
+            #print('invalid input, coin index not found in the first 2 pages, using random coin index: ', coin_index) 
+       return coin_index
 
     def _retrieve_Text_And_Image(self, coin_index):
         '''
@@ -178,22 +181,22 @@ class web_Scraper:
         coin_link = self.list_of_coin_links[coin_index]
         print(coin_link)
         self.driver.get(coin_link)
-        coin_class = self.driver.find_element(by=By.XPATH, value = '//div[1][@class="sc-1prm8qw-0 cyZVgY top-summary-container"]')
+        coin_class = self.driver.find_element(by=By.XPATH, value = '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div')
         try:
-            coin_name = coin_class.find_element(by=By.XPATH, value = '//span[@class="sc-169cagi-0 kQxZxB"]')
-        except:
-            coin_name = coin_class.find_element(by=By.XPATH, value = '//span[@class="sc-169cagi-0 kQxZxB tooltip"]')
-        coin_name = coin_name.get_attribute('data-text')
-        coin_image = coin_class.find_element(by=By.XPATH, value = '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]/img')
-        image_list_of_coin_links = coin_image.get_attribute("src")
-        coin_price = coin_class.find_element(by=By.XPATH, value = '//div[@class="priceValue "]').text
-        coin_rank = coin_class.find_element(by=By.XPATH, value='//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div/div[1]/div[2]/div[1]').text
+            self.coin_name = coin_class.find_element(by=By.XPATH, value = './div[1]/div[1]/h2/span').text
+            coin_image = coin_class.find_element(by=By.XPATH, value = './div[1]/div[1]/img')
+            self.coin_image_link = coin_image.get_attribute("src")
+            self.coin_price = self.driver.find_element(by=By.XPATH, value = '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div/div[2]/div[1]/div').text
+            self.coin_rank = coin_class.find_element(by=By.XPATH, value='./div[1]/div[2]/div[1]').text
+        except Exception as e:
+            print(e)
+            pass
         # ct stores current time
         ct = datetime.datetime.now()
         # ts store timestamp of current time
         ts = ct.timestamp()
-        coin_id = coin_name + '#' + str(id(coin_name) )
-        self.coin_dict = {"coin id":coin_id,"coin name":coin_name, "image list_of_coin_links":image_list_of_coin_links, "coin price": coin_price, "time stamp": ts, "coin rank":coin_rank}
+        self.coin_id = str(self.coin_name) + '#' + str(id(self.coin_name) )
+        self.coin_dict = {"coin id":self.coin_id,"coin name":self.coin_name, "image list_of_coin_links":self.coin_image_link, "coin price": self.coin_price, "time stamp": ts, "coin rank":self.coin_rank}
         print(self.coin_dict)
         return self.coin_dict
 
@@ -224,7 +227,7 @@ class web_Scraper:
 
 if __name__ == '__main__':
     webscraper = web_Scraper()
-    webscraper.load_and_close_unwanted()
+    webscraper.close_unwanted()
     webscraper._scan_page(3, 2)
     webscraper._get_list_of_coin_links()
     if(len(webscraper.list_of_coin_links) < 90):
