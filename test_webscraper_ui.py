@@ -16,21 +16,18 @@ class TestWebScraper(unittest.TestCase):
     This is a class implemented to test the 
     webscraper code developed in python
     '''
-    @classmethod
     def setUp(self):
         self.web_Scraper = web_Scraper()
+        self.aValue = self.web_Scraper.accept_cookies()
         self.url = ""
         self.website_list = []
         self.coin_dict = {}
         self.directory = ""
 
-    def test_close_unwanted(self):
-        aValue = self.web_Scraper.close_unwanted()
-        self.assertTrue(aValue)
+    def test_accept_cookies(self):
+        self.assertTrue(self.aValue)
 
     def test_click_next_page(self):
-        self.web_Scraper.close_unwanted()
-        self.web_Scraper._scan_page(3, 2)
         time.sleep(0.5)
         self.web_Scraper._get_list_of_coin_links()
         self.url = self.web_Scraper._click_next_page()
@@ -38,34 +35,28 @@ class TestWebScraper(unittest.TestCase):
 
 
     def test_get_list_of_coin_links(self):
-        self.web_Scraper.close_unwanted()
-        self.web_Scraper._scan_page(3, 2)
         self.website_list = self.web_Scraper._get_list_of_coin_links()
         self.assertAlmostEqual(len(self.website_list), 100)
 
     def test_retrieve_Text_And_Image(self):
-        self.web_Scraper.close_unwanted()
-        self.web_Scraper._scan_page(3,2)
         self.web_Scraper._get_list_of_coin_links()
-        coin_index = random.randrange(0, len(self.web_Scraper.list_of_coin_links)) 
-        self.coin_dict = self.web_Scraper._retrieve_Text_And_Image(coin_index)
-        for value in self.coin_dict.items():
-            if 'none' in value:
+        self.coin_dict = self.web_Scraper._retrieve_Text_And_Image()
+        for dict_item in self.coin_dict.items(): 
+            if None in dict_item:
                 self.assertFalse
             else:
                 self.assertTrue
 
     def test_saved_data(self):
-        self.web_Scraper.close_unwanted()
-        self.web_Scraper._scan_page(3,2)
         self.web_Scraper._get_list_of_coin_links()
-        coin_index = random.randrange(0, len(self.web_Scraper.list_of_coin_links)) 
-        self.coin_dict = self.web_Scraper._retrieve_Text_And_Image(coin_index)
+        self.coin_dict = self.web_Scraper._retrieve_Text_And_Image()
         self.directory = self.web_Scraper._save_data()
         if(os.path.isdir('./raw_data/*/*.jpg') and os.path.isdir('./raw_data/*/*.json')):
             self.assertTrue
         else:
             self.assertFalse
+
+    def tearDown(self):
         self.web_Scraper.driver.quit() 
 
 if __name__ == "__main__":

@@ -5,7 +5,18 @@ This is a python program written to automate the process of Data collection from
 website, For this project, coinmarketcap, a finance based website had been chosen.
 implemented a class for the data collection schema.
 
-    Parameters & attributes
+This python application developed using selenium to interact with web elements, 
+opens up the Coinmarketcap website using a bot, then scans the 
+first two pages from the table, acquires all the link to to the top 200 coins from the
+table and then goes onto a coin page from the list acquired (done randomly),
+scrapes data like Coin name, Coin ID(Generated using coin name with random number), link to download the Coin logo, Coin Price, Time stamp - when the coin details were scraped and the Coin rank from the table.
+of when the data was scraped from the coin page visited and the stores the data scraped locally.
+
+This application uses a CI/CD pipeline with the help of DockerContainer and Github actions 
+for automating the applications build, test and deployment process.
+
+
+    Parameters & attr uibutes
     _______________________
 
     count : int

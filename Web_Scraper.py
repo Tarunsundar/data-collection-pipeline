@@ -21,7 +21,7 @@ class web_Scraper:
     Data/information from the chosen financial website.
     '''
 
-    def __init__(self) -> None:
+    def __init__(self):
         ''' 
         web scrapper class constructor to initialize the object
         parameters 
@@ -30,7 +30,7 @@ class web_Scraper:
 
         type
         ----
-         Object - an Object
+         Object - an Object of class web_scraper
 
         '''
         self.count = 0 # variable for number of Cryptocurrencies data acquired
@@ -52,47 +52,39 @@ class web_Scraper:
         self.coin_image_link = ""
         self.coin_dict = {}
 
-    def close_unwanted(self) -> webdriver.Chrome:
+    def accept_cookies(self) -> bool:
         '''
-        this method accepts the cookies
+        this method accepts the cookies and returns True/False on the success
 
         Returns
         -------
-        driver: webdriver.Chrome
-            This driver loads the coinmarketcap webpage 
+        bool:
+            True, if method successfully accepts the cookies else returns False. 
         ''' 
-        #time.sleep(30)
         self.driver.maximize_window()
         try:
             accept_cookies_button = self.driver.find_element(by=By.XPATH, value='//div[@class="cmc-cookie-policy-banner__close"]')
             accept_cookies_button.click()
-            time.sleep(1)
             return True
         except:
             print("Couldn't find button")
-            return False #if accept cookies button  found
+            return False #if accept cookies button not found
 
     def _click_next_page(self):
         '''
         This function finds and clicks the next page button
-        parameters 
-        ----------
 
-        self - an instance of the web_scraper
-
-        type 
-        ----
-
-        Object - an object instance of the web_scraper class151
+        Returns
+        -------
+        str:
+            the link that the driver is currently at the end of this method.
 
         '''
-        #self.driver.execute_script("window.scrollBy(0,5500)","")
         find_class = self.driver.find_element(by=By.XPATH, value='//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[7]/div[1]/div')
         find_next = find_class.find_element(by=By.XPATH, value='//li[@class="next"]')
         a_tag = find_next.find_element(by=By.TAG_NAME, value='a')
-        list_of_coin_links = a_tag.get_attribute('href')
-        print(list_of_coin_links)        
-        sleep(2)
+        list_of_coin_links = a_tag.get_attribute('href')      
+        sleep(1)
         self.driver.get(list_of_coin_links)
         get_url = self.driver.current_url
         return get_url
@@ -112,31 +104,27 @@ class web_Scraper:
         Number in time(seconds), that the program needs to stay idle before 
         executing the next command. 
         '''
+        script = "window.scrollTo({left: 0, top: document.body.scrollHeight, behavior : 'smooth'});"
         for _ in range(no_of_scans):
-            self.driver.execute_script("window.scrollTo({left: 0, top: document.body.scrollHeight, behavior : 'smooth'});")
+            self.driver.execute_script(script)
             sleep(wait_time)
             self.driver.execute_script("window.scrollTo({left: 0, top: -(document.body.scrollHeight), behavior : 'smooth'});")
             sleep(wait_time)
-            self.driver.execute_script("window.scrollTo({left: 0, top: document.body.scrollHeight, behavior : 'smooth'});")
+            self.driver.execute_script(script)
         return self.driver
 
 
     def _get_list_of_coin_links(self) -> list:
         '''
-        Returns a list with all the list_of_coin_linkss in the current page
-        Parameters
-        ----------
-        driver: webdriver.Chrome
-            The driver that contains information about the current page
-        
+        gets a list with all the list_of_coin_links in the current page
         Returns
         -------
-        list_of_coin_links:>coin_index list
-            A list with all the list_of_coin_linkss in the page
+        list_of_coin_links: list
+            A list with all the links to different coin pages from the table.
         '''
+        self._scan_page(3, 1)
         crypto_table = self.driver.find_element(by=By.XPATH, value='/html/body/div[1]/div/div[1]/div[2]/div/div[1]/div[5]/table')
         crypto_list = crypto_table.find_elements(by=By.XPATH, value='//tbody/tr/td[3]/div')
-        time.sleep(0.1)
 
         for crypto_currency in crypto_list:
             a_tag = crypto_currency.find_element(by=By.TAG_NAME, value='a')       
@@ -144,40 +132,32 @@ class web_Scraper:
             self.list_of_coin_links.append(list_of_coin_links)
 
         print(" number of coin pages acquired: ", len(self.list_of_coin_links))    
-        #print(f'There are {len(self.list_of_coin_links)>coin_index} crypto currencies in this page')
-        #print(self.list_of_coin_links)>coin_index
         return self.list_of_coin_links
        
-    def _download_coin_logo(self, fp):
+    def _download_coin_logo(self):
         '''
         This function can be used to download the coin logo 
         from the coinmarketcap.com website's page.
-        
-        Parameters
-        ----------
-        fp: String
-            The file path from where we can find
-            the link to download the logo.
         '''
         img_data = requests.get(self.coin_dict["image list_of_coin_links"]).content
         with open(str(self.coin_dict["coin name"]) + ' logo.jpg', 'wb') as handler:
             handler.write(img_data)
         
-    def _get_coin_index(self):
-       #coin_index = int(input("which coin from the first 2 pages, you would like(enter rank)\n"))
-       #coin_index = coin_index - 1 
-       #if(len(self.list_of_coin_links)<coin_index):            
-       coin_index = random.randrange(0, len(self.list_of_coin_links)) 
-            #print('invalid input, coin index not found in the first 2 pages, using random coin index: ', coin_index) 
-       return coin_index
 
-    def _retrieve_Text_And_Image(self, coin_index):
+    def _retrieve_Text_And_Image(self) -> dict:
         '''
         This function can be used to 
         retrieve the text and image from a webpage 
         containing information on a CryptoCurrency 
         randomly chosen from the first two pages.
+
+        Return
+        ----------
+        coin_dict: dict
+            This is a dictionary to store the data scraped on the coin.
+
         '''
+        coin_index = random.randrange(0, len(self.list_of_coin_links)) 
         coin_link = self.list_of_coin_links[coin_index]
         print(coin_link)
         self.driver.get(coin_link)
@@ -189,22 +169,22 @@ class web_Scraper:
             self.coin_price = self.driver.find_element(by=By.XPATH, value = '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div/div[2]/div[1]/div').text
             self.coin_rank = coin_class.find_element(by=By.XPATH, value='./div[1]/div[2]/div[1]').text
         except Exception as e:
-            print(e)
+            print("Oops, couldn't find an web element!")
             pass
-        # ct stores current time
         ct = datetime.datetime.now()
-        # ts store timestamp of current time
         ts = ct.timestamp()
         self.coin_id = str(self.coin_name) + '#' + str(id(self.coin_name) )
         self.coin_dict = {"coin id":self.coin_id,"coin name":self.coin_name, "image list_of_coin_links":self.coin_image_link, "coin price": self.coin_price, "time stamp": ts, "coin rank":self.coin_rank}
         print(self.coin_dict)
         return self.coin_dict
 
-    def _save_data(self):
+    def _save_data(self) -> str:
         '''
         This function can be used to save the information
         acquired from finance website on a specific cryptocurrency
         locally on a json file.
+        p_dir_name is parent directory name.
+        c_dir_name is child directory name,
         '''
         # Create directory
         p_dir_name = 'raw_data'
@@ -217,7 +197,7 @@ class web_Scraper:
         except FileExistsError:
             print("Directory " , create_directories ,  " already exists")
         os.chdir(create_directories)
-        self._download_coin_logo(create_directories)
+        self._download_coin_logo()
         jsonString = json.dumps(self.coin_dict)
         jsonFile = open("data.json", "w")
         jsonFile.write(jsonString)
@@ -227,17 +207,15 @@ class web_Scraper:
 
 if __name__ == '__main__':
     webscraper = web_Scraper()
-    webscraper.close_unwanted()
-    webscraper._scan_page(3, 2)
+    webscraper.accept_cookies()
     webscraper._get_list_of_coin_links()
     if(len(webscraper.list_of_coin_links) < 90):
-        webscraper._scan_page(3,2)
         webscraper._get_list_of_coin_links()
     webscraper._click_next_page()
-    webscraper._scan_page(3, 2)
     webscraper._get_list_of_coin_links()
-    coin_index = webscraper._get_coin_index()
-    webscraper._retrieve_Text_And_Image(coin_index)
+    if(len(webscraper.list_of_coin_links) < 190):
+        webscraper._get_list_of_coin_links()
+    webscraper._retrieve_Text_And_Image()
     webscraper._save_data()
     webscraper.driver.quit() # this closes the opened browser before this program terminates
     
